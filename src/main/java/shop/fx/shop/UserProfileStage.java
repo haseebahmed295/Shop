@@ -4,6 +4,7 @@ import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
+import javafx.scene.image.Image;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
@@ -23,6 +24,7 @@ public class UserProfileStage extends Stage {
         this.user = user;
         setTitle("User Profile");
         setResizable(false);
+        this.getIcons().add(new Image(getClass().getResourceAsStream("store.png")));
 
         VBox root = new VBox(15);
         root.setPadding(new Insets(20));

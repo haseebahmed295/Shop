@@ -3,6 +3,7 @@ import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
+import javafx.scene.image.Image;
 import javafx.scene.layout.*;
 import javafx.stage.Stage;
 import org.kordamp.ikonli.javafx.FontIcon;
@@ -33,6 +34,7 @@ public class CartManager {
     // Show cart stage
     public void showCartStage() {
         Stage cartStage = new Stage();
+        cartStage.getIcons().add(new Image(getClass().getResourceAsStream("store.png")));
         cartStage.setTitle("Shopping Cart");
         cartStage.setMinWidth(600);
 

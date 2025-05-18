@@ -87,7 +87,7 @@ public class LoginStage extends Stage {
                     showAlert(Alert.AlertType.ERROR, "Error", "Email is required for sign-up.");
                     return;
                 }
-                User user = new User(username, email, "Admin");
+                User user = new User(username, email, "User");
                 db.addUser(user, password);
                 showAlert(Alert.AlertType.INFORMATION, "Success", "User created successfully!");
                 VBox root = (VBox) getScene().getRoot();

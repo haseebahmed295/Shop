@@ -1,40 +1,39 @@
 package shop.fx.shop;
-
-
-
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
+import javafx.scene.image.Image;
 import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import java.io.File;
-import java.nio.file.Files;
 import java.sql.SQLException;
 
 public class AddProductStage extends Stage {
     private final DatabaseManager db;
     private final User user;
+    private final MarketplaceApp marketplaceApp;
 
-    public AddProductStage(DatabaseManager db, User user, Stage parent) {
+    public AddProductStage(DatabaseManager db, User user, Stage parent , MarketplaceApp marketplaceApp) {
         this.db = db;
         this.user = user;
+        this.marketplaceApp = marketplaceApp;
         setTitle("Add New Product");
         setResizable(false);
-
-//        // Check if user is admin
-//        try {
-////            if (!db.isAdmin(user.getId())) {
-////                showAlert(Alert.AlertType.ERROR, "Access Denied", "Only administrators can add products.");
-////                close();
-////                return;
-////            }
-//        } catch (SQLException e) {
-//            showAlert(Alert.AlertType.ERROR, "Database Error", e.getMessage());
-//            close();
-//            return;
-//        }
+        this.getIcons().add(new Image(getClass().getResourceAsStream("store.png")));
+        // Check if user is admin
+        try {
+            if (!db.isAdmin(user.getId())) {
+                showAlert(Alert.AlertType.ERROR, "Access Denied", "Only administrators can add products.");
+                close();
+                return;
+            }
+        } catch (SQLException e) {
+            showAlert(Alert.AlertType.ERROR, "Database Error", e.getMessage());
+            close();
+            return;
+        }
 
         VBox root = new VBox(15);
         root.setPadding(new Insets(20));
@@ -53,6 +52,11 @@ public class AddProductStage extends Stage {
         descriptionArea.setWrapText(true);
         descriptionArea.getStyleClass().add("text-area");
         descriptionArea.setPrefRowCount(4);
+
+        TextField sellerField = new TextField();
+        sellerField.setPromptText("Seller Name");
+        sellerField.setEditable(true);
+        sellerField.getStyleClass().add("text-field");
 
         TextField priceField = new TextField();
         priceField.setPromptText("Price");
@@ -82,6 +86,7 @@ public class AddProductStage extends Stage {
                 nameField.getText(),
                 descriptionArea.getText(),
                 priceField.getText(),
+                sellerField.getText(),
                 selectedFile[0]
         ));
 
@@ -89,6 +94,7 @@ public class AddProductStage extends Stage {
                 titleLabel,
                 nameField,
                 descriptionArea,
+                sellerField,
                 priceField,
                 imageButton,
                 imageLabel,
@@ -110,7 +116,7 @@ public class AddProductStage extends Stage {
         setY(parent.getY() + (parent.getHeight() - 500) / 2);
     }
 
-    private void handleAddProduct(String name, String description, String price, File imageFile) {
+    private void handleAddProduct(String name, String description, String price,String seller, File imageFile) {
         // Validate inputs
         if (name.isEmpty()) {
             showAlert(Alert.AlertType.ERROR, "Error", "Product name is required.");
@@ -129,6 +135,7 @@ public class AddProductStage extends Stage {
             return;
         }
 
+
         // Create product
         try {
 
@@ -136,11 +143,12 @@ public class AddProductStage extends Stage {
                     name,
                     description.isEmpty() ? null : description,
                     priceValue,
-                    "Admin", // Seller set to Admin for simplicity
+                    seller,
                     imageFile.getPath()
             );
 
             db.addProduct(product);
+            marketplaceApp.loadProducts();
             showAlert(Alert.AlertType.INFORMATION, "Success", "Product added successfully!");
             close();
         } catch (SQLException e) {

@@ -52,6 +52,8 @@ public class MarketplaceApp extends Application {
 
         primaryStage.setUserData(this); // Store app instance for access in UserProfileStage
 
+        primaryStage.getIcons().add(new Image(Objects.requireNonNull(getClass().getResourceAsStream("store.png"))));
+
         LoginStage loginStage = new LoginStage(db, user -> {
             this.loggedInUser = user;
             primaryStage.setTitle("Marketplace");
@@ -67,6 +69,7 @@ public class MarketplaceApp extends Application {
             loadProducts();
         });
         loginStage.show();
+        loginStage.getIcons().add(new Image(Objects.requireNonNull(getClass().getResourceAsStream("store.png"))));
     }
 
     // Public method to update loggedInUser
@@ -117,7 +120,7 @@ public class MarketplaceApp extends Application {
         MenuItem profileItem = new MenuItem("Profile");
         profileItem.setOnAction(_ -> new UserProfileStage(db, loggedInUser).show());
         MenuItem addProductItem = new MenuItem("Add Product");
-        addProductItem.setOnAction(_ -> new AddProductStage(db, loggedInUser, (Stage) headerPane.getScene().getWindow()).show());
+        addProductItem.setOnAction(_ -> new AddProductStage(db, loggedInUser, (Stage) headerPane.getScene().getWindow(), this).show());
         try {
             if (db.isAdmin(loggedInUser.getId())) {
                 userMenu.getItems().add(addProductItem);
@@ -216,7 +219,7 @@ public class MarketplaceApp extends Application {
         imageView.setSmooth(true);
         // Create a rectangle with rounded top corners
         Rectangle clip = new Rectangle(PRODUCT_WIDTH, ImageHeight);
-        clip.setArcWidth(20);
+        clip.setArcWidth(20); // Corner radius
         clip.setArcHeight(20);
         clip.setY(0);
         clip.setHeight(ImageHeight);
@@ -253,11 +256,11 @@ public class MarketplaceApp extends Application {
     private void setupProductPaneInteractions(VBox pane, Product product) {
         pane.setOnMouseEntered(_ -> pane.getStyleClass().add("product-frame-hover"));
         pane.setOnMouseExited(_ -> pane.getStyleClass().remove("product-frame-hover"));
-        pane.setOnMouseClicked(_ -> new ProductDetailStage(product, (Stage) pane.getScene().getWindow()).show());
+        pane.setOnMouseClicked(_ -> new ProductDetailStage(product, (Stage) pane.getScene().getWindow(), loggedInUser, cartManager, db , this).show());
     }
 
     // Load products from database
-    private void loadProducts() {
+    public void loadProducts() {
         Task<List<Product>> task = new Task<>() {
             @Override
             protected List<Product> call() throws SQLException {

@@ -46,6 +46,11 @@ class Product {
     private final String seller;
     private final byte[] image;
 
+
+    public String getSellerName() {
+        return seller;
+    }
+
     public Product(String name, String description, double price, String seller, String imagePath) {
         this.name = name;
         this.description = description;
@@ -272,7 +277,7 @@ class DatabaseManager {
                 products.add(product);
             }
         }
-        return products;
+        return products.reversed();
     }
 
     public List<User> getAllUsers() throws SQLException {

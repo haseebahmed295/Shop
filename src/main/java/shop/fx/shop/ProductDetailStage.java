@@ -13,6 +13,7 @@ import java.awt.*;
 import java.io.ByteArrayInputStream;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
+import java.sql.SQLException;
 import javax.imageio.ImageIO;
 import javafx.scene.control.TextArea;
 // Product detail page
@@ -20,48 +21,29 @@ public class ProductDetailStage extends Stage {
     private static final double WINDOW_WIDTH = 600;
     private static final double WINDOW_HEIGHT = 700;
 
-    public ProductDetailStage(Product product, Stage parent) {
+    public ProductDetailStage(Product product, Stage parent, User loggedInUser, CartManager cartManager, DatabaseManager db , MarketplaceApp marketplaceApp) {
         setTitle(product.getName());
         setMinWidth(400);
         setMinHeight(500);
-
+        this.getIcons().add(new Image(getClass().getResourceAsStream("store.png")));
         BorderPane root = new BorderPane();
-        root.setPadding(new Insets(10));
+        root.setPadding(new Insets(0)); // Removed padding
         root.setStyle("-fx-background-color: #F5F5F5;");
-
-        // Back button
-        Button backButton = new Button("Back");
-        backButton.setStyle("-fx-background-color: #0078D4; -fx-text-fill: white; -fx-font-family: 'Segoe UI'; -fx-font-size: 14; -fx-background-radius: 8;");
-        backButton.getStyleClass().add("rounded-button");
-        backButton.setOnMouseEntered(e -> backButton.setStyle("-fx-background-color: #005BA1; -fx-text-fill: white; -fx-font-family: 'Segoe UI'; -fx-font-size: 14; -fx-background-radius: 8;"));
-        backButton.setOnMouseExited(e -> backButton.setStyle("-fx-background-color: #0078D4; -fx-text-fill: white; -fx-font-family: 'Segoe UI'; -fx-font-size: 14; -fx-background-radius: 8;"));
-        backButton.setOnAction(e -> close());
-
-        HBox backPane = new HBox(backButton);
-        backPane.setPadding(new Insets(5));
-        backPane.setStyle("-fx-background-color: #F5F5F5;");
-        root.setTop(backPane);
-
-        // Content
-        VBox contentPane = new VBox(10);
-        contentPane.getStyleClass().add("product-frame");
-        contentPane.setAlignment(Pos.TOP_CENTER);
-        contentPane.setPadding(new Insets(10));
 
         // Image
         ImageView imageView = new ImageView();
-        imageView.setFitWidth(WINDOW_WIDTH - 40);
+        imageView.setFitWidth(WINDOW_WIDTH);
         imageView.setFitHeight(300);
-        imageView.setPreserveRatio(true);
+        imageView.setPreserveRatio(false); // Set to false to fit the image to the specified height
         if (product.getImage() != null) {
             try {
                 Image image = new Image(new ByteArrayInputStream(product.getImage()));
                 imageView.setImage(image);
             } catch (Exception e) {
-                imageView.setImage(createPlaceholderImage(WINDOW_WIDTH - 40, 300));
+                imageView.setImage(createPlaceholderImage(WINDOW_WIDTH, 300));
             }
         } else {
-            imageView.setImage(createPlaceholderImage(WINDOW_WIDTH - 40, 300));
+            imageView.setImage(createPlaceholderImage(WINDOW_WIDTH, 300));
         }
 
         // Details
@@ -69,20 +51,59 @@ public class ProductDetailStage extends Stage {
         nameLabel.setStyle("-fx-font-family: 'Segoe UI'; -fx-font-size: 18; -fx-font-weight: bold; -fx-text-fill: #333333;");
         nameLabel.setAlignment(Pos.CENTER);
 
+        Label sellerLabel = new Label("Seller: " + product.getSellerName());
+        sellerLabel.setStyle("-fx-font-family: 'Segoe UI'; -fx-font-size: 14; -fx-text-fill: #666666;");
+
         TextArea descArea = new TextArea(product.getDescription() != null ? product.getDescription() : "");
         descArea.setStyle("-fx-font-family: 'Segoe UI'; -fx-font-size: 14; -fx-text-fill: #666666; -fx-background-color: transparent;");
         descArea.setWrapText(true);
         descArea.setEditable(false);
         descArea.setPrefWidth(WINDOW_WIDTH - 40);
 
-        VBox detailsPane = new VBox(10, nameLabel, descArea);
+        VBox detailsPane = new VBox(10, nameLabel,sellerLabel, descArea);
         detailsPane.setAlignment(Pos.TOP_CENTER);
+        detailsPane.setPadding(new Insets(10));
         ScrollPane detailsScroll = new ScrollPane(detailsPane);
         detailsScroll.setFitToWidth(true);
         detailsScroll.setStyle("-fx-background: #FFFFFF; -fx-border-color: transparent;");
 
-        contentPane.getChildren().addAll(imageView, detailsScroll);
-        root.setCenter(contentPane);
+        // Buttons
+        Button addToCartButton = new Button("Add to Cart");
+        addToCartButton.setStyle("-fx-background-color: #0078D4; -fx-text-fill: white; -fx-font-family: 'Segoe UI'; -fx-font-size: 14; -fx-background-radius: 8;");
+        addToCartButton.setOnAction(e -> cartManager.addToCart(product));
+
+        Button removeProductButton = null;
+        try {
+            if (db.isAdmin(loggedInUser.getId())) {
+                removeProductButton = new Button("Remove Product");
+                removeProductButton.setStyle("-fx-background-color: #DC3545; -fx-text-fill: white; -fx-font-family: 'Segoe UI'; -fx-font-size: 14; -fx-background-radius: 8;");
+                removeProductButton.setOnAction(e -> {
+                    // Remove product logic
+                    try {
+                        db.removeProduct(product.getId());
+                        marketplaceApp.loadProducts();
+                        close();
+                    } catch (SQLException ex) {
+                        // Handle exception
+                    }
+                });
+            }
+        } catch (SQLException e) {
+            // Handle exception
+        }
+
+        HBox buttonsPane = new HBox(10);
+        buttonsPane.setAlignment(Pos.CENTER_RIGHT);
+        buttonsPane.setPadding(new Insets(10));
+        buttonsPane.getChildren().add(addToCartButton);
+        if (removeProductButton != null) {
+            buttonsPane.getChildren().add(removeProductButton);
+        }
+
+        // Layout
+        root.setTop(imageView);
+        root.setCenter(detailsScroll);
+        root.setBottom(buttonsPane);
 
         Scene scene = new Scene(root, WINDOW_WIDTH, WINDOW_HEIGHT);
         scene.getStylesheets().add(getClass().getResource("styles.css").toExternalForm());
