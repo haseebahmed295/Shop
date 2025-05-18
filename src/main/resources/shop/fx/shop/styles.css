@@ -7,8 +7,20 @@
 .header-pane {
     -fx-background-color: transparent;
     -fx-background-radius: 8;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 5, 0, 0, 2);
 }
+.header-pane:hover {
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 5, 0, 0, 2);
+
+}
+.menu-button{
+    -fx-background-color: transparent;
+    -fx-arrows-visible: false;
+    -fx-legend-visible: false;
+}
+.menu-button:hover {
+    -fx-background-color: rgba(150, 148, 148, 0.2);
+}
+
 
 /* Search frame */
 .search-frame {
@@ -28,43 +40,15 @@
 
 /* Buttons */
 .rounded-button {
-    -fx-background-radius: 20;
-    -fx-font-family: 'Segoe UI';
-    -fx-font-size: 14;
-    -fx-text-fill: white;
-    -fx-cursor: hand;
+    -fx-background-radius: 50%; /* Perfectly circular */
+    -fx-background-color: transparent;
+    -fx-pref-width: 36px; /* Fixed size for circular shape */
+    -fx-pref-height: 36px;
+    -fx-padding: 0; /* Center icon */
+    -fx-alignment: center; /* Center icon */
 }
-
-.refresh-button {
-    -fx-background-color: #0078D4;
-}
-
-.refresh-button:hover {
-    -fx-background-color: #005BA1;
-}
-
-.cart-button {
-    -fx-background-color: #28A745;
-}
-
-.cart-button:hover {
-    -fx-background-color: #218838;
-}
-
-.add-to-cart-button {
-    -fx-background-color: #0078D4;
-}
-
-.add-to-cart-button:hover {
-    -fx-background-color: #005BA1;
-}
-
-.remove-button {
-    -fx-background-color: #DC3545;
-}
-
-.remove-button:hover {
-    -fx-background-color: #C82333;
+.rounded-button:hover {
+    -fx-background-color: rgba(150, 148, 148, 0.2);
 }
 
 /* Products grid */
@@ -81,29 +65,6 @@
     -fx-padding: 0;
 }
 
-/* Scrollbar styling */
-.products-scroll-pane .scroll-bar:vertical {
-    -fx-opacity: 0;
-    -fx-background-color: transparent;
-}
-
-.products-scroll-pane .scroll-bar:vertical:hover {
-    -fx-opacity: 1;
-}
-
-.products-scroll-pane .scroll-bar:vertical .thumb {
-    -fx-background-color: rgba(0, 0, 0, 0.3);
-    -fx-background-radius: 10;
-}
-
-.products-scroll-pane .scroll-bar:vertical .thumb:hover {
-    -fx-background-color: rgba(0, 0, 0, 0.5);
-}
-
-.products-scroll-pane .scroll-bar:vertical .track {
-    -fx-background-color: transparent;
-}
-
 /* Product frame */
 .product-frame {
     -fx-background-color: #FFFFFF;
@@ -111,8 +72,8 @@
     -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 5, 0, 0, 2);
     -fx-cursor: hand;
 }
-
-.product-frame-hover {
+.product-frame:hover {
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.2), 5, 0, 0, 2);
     -fx-background-color: #F0F0F0;
 }
 
@@ -135,53 +96,4 @@
     -fx-font-size: 14;
     -fx-font-weight: bold;
     -fx-text-fill: #0078D4;
-}
-/* Cart items pane styling */
-.cart-items-pane {
-    -fx-background-color: #ffffff;
-    -fx-border-color: #e0e0e0;
-    -fx-border-radius: 5;
-    -fx-border-width: 1;
-}
-
-/* Cart item styling */
-.cart-item {
-    -fx-background-color: #fafafa;
-    -fx-border-color: #e0e0e0;
-    -fx-border-radius: 3;
-    -fx-border-width: 1;
-    -fx-padding: 10;
-}
-
-/* Cart item name styling */
-.cart-item-name {
-    -fx-font-size: 14px;
-    -fx-font-weight: bold;
-    -fx-text-fill: #333333;
-}
-
-/* Cart item price styling */
-.cart-item-price {
-    -fx-font-size: 14px;
-    -fx-text-fill: #2e7d32;
-    -fx-padding: 0 10 0 0; /* Space between price and remove button */
-}
-
-/* Remove button styling */
-.remove-button {
-    -fx-background-color: transparent;
-    -fx-text-fill: white;
-
-}
-
-.remove-button:hover {
-    -fx-background-color: rgba(198, 40, 40, 0.72);
-}
-
-/* Cart total styling */
-.cart-total {
-    -fx-font-size: 16px;
-    -fx-font-weight: bold;
-    -fx-text-fill: #333333;
-    -fx-alignment: center-right; /* Align text to the right */
 }

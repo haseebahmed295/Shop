@@ -13,8 +13,9 @@ import javafx.scene.control.TextField;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.*;
+import javafx.scene.shape.Rectangle;
 import javafx.stage.Stage;
-import org.kordamp.ikonli.fontawesome.FontAwesome;
+import org.kordamp.ikonli.feather.Feather;
 import org.kordamp.ikonli.javafx.FontIcon;
 import javax.imageio.ImageIO;
 import java.awt.Graphics2D;
@@ -25,54 +26,56 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.Objects;
 
-// Main JavaFX application for the marketplace
+import atlantafx.base.theme.PrimerLight;
+
 public class MarketplaceApp extends Application {
     private DatabaseManager db;
     private GridPane productsGrid;
     private TextField searchField;
     private CartManager cartManager;
+    private User loggedInUser;
 
     private static final double PRODUCT_WIDTH = 250;
     private static final double PRODUCT_HEIGHT = 300;
     private static final double HORIZONTAL_GAP = 10;
     private static final double VERTICAL_GAP = 10;
     private static final double LEFT_PADDING = 20;
+    private static final double ImageHeight = 180;
 
     @Override
     public void start(Stage primaryStage) {
-        initializeDatabase();
-        if (db == null) {
-            showErrorAlert("Failed to initialize database");
-            return;
-        }
-
+        Application.setUserAgentStylesheet(new PrimerLight().getUserAgentStylesheet());
+        db = new DatabaseManager();
         cartManager = new CartManager();
 
-        primaryStage.setTitle("Marketplace");
-        primaryStage.setMinWidth(680);
-        primaryStage.setMinHeight(420);
+        primaryStage.setUserData(this); // Store app instance for access in UserProfileStage
 
-        BorderPane root = createRootPane();
-        Scene scene = createScene(root);
-        setupResizeListener(primaryStage);
-        primaryStage.setScene(scene);
-        primaryStage.show();
+        LoginStage loginStage = new LoginStage(db, user -> {
+            this.loggedInUser = user;
+            primaryStage.setTitle("Marketplace");
+            primaryStage.setMinWidth(680);
+            primaryStage.setMinHeight(420);
 
-        loadProducts();
+            BorderPane root = createRootPane();
+            Scene scene = createScene(root);
+            setupResizeListener(primaryStage);
+            primaryStage.setScene(scene);
+            primaryStage.show();
+
+            loadProducts();
+        });
+        loginStage.show();
     }
 
-    // Initialize database connection
-    private void initializeDatabase() {
-        try {
-            db = new DatabaseManager();
-        } catch (RuntimeException e) {
-            db = null;
-        }
+    // Public method to update loggedInUser
+    public void setLoggedInUser(User user) {
+        this.loggedInUser = user;
     }
 
     // Create the root BorderPane
-    private BorderPane createRootPane() {
+    BorderPane createRootPane() {
         BorderPane root = new BorderPane();
         root.setPadding(new Insets(10));
         root.getStyleClass().add("root-pane");
@@ -81,39 +84,56 @@ public class MarketplaceApp extends Application {
         return root;
     }
 
-    // Create the header with search and cart button
+    // Create the header with search, cart, and user dropdown
     private HBox createHeaderPane() {
         HBox headerPane = new HBox(10);
         headerPane.getStyleClass().add("header-pane");
         headerPane.setPadding(new Insets(15));
         headerPane.setAlignment(Pos.CENTER_LEFT);
 
-        HBox searchFrame = new HBox(5); // Reduced spacing for tighter layout
+        HBox searchFrame = new HBox(5);
         searchFrame.getStyleClass().add("search-frame");
         searchFrame.setAlignment(Pos.CENTER_LEFT);
 
         searchField = new TextField();
         searchField.setPromptText("Search products...");
         searchField.getStyleClass().add("search-field");
-        searchField.setOnAction(e -> searchProducts());
-        HBox.setHgrow(searchField, Priority.ALWAYS); // Search field expands
+        searchField.setOnAction(_ -> searchProducts());
+        HBox.setHgrow(searchField, Priority.ALWAYS);
 
-        Button refreshButton = createStyledButton("", FontAwesome.SEARCH, "refresh-button");
-        refreshButton.setOnAction(e -> searchProducts());
-        HBox.setMargin(refreshButton, new Insets(0, 0, 0, 5)); // Small margin for spacing
+        Button refreshButton = createStyledButton("", Feather.SEARCH, "refresh-button");
+        refreshButton.setOnAction(_ -> searchProducts());
+        HBox.setMargin(refreshButton, new Insets(0, 0, 0, 5));
 
         searchFrame.getChildren().addAll(searchField, refreshButton);
 
-        Button cartButton = createStyledButton("", FontAwesome.SHOPPING_CART, "cart-button");
-        cartButton.setOnAction(e -> cartManager.showCartStage());
+        Button cartButton = createStyledButton("", Feather.SHOPPING_CART, "cart-button");
+        cartButton.setOnAction(_ -> cartManager.showCartStage());
 
-        headerPane.getChildren().addAll(searchFrame, cartButton);
+        MenuButton userMenu = new MenuButton();
+
+        userMenu.setGraphic(new FontIcon(Feather.MENU));
+        userMenu.getStyleClass().add("user-menu");
+        MenuItem profileItem = new MenuItem("Profile");
+        profileItem.setOnAction(_ -> new UserProfileStage(db, loggedInUser).show());
+        MenuItem addProductItem = new MenuItem("Add Product");
+        addProductItem.setOnAction(_ -> new AddProductStage(db, loggedInUser, (Stage) headerPane.getScene().getWindow()).show());
+        try {
+            if (db.isAdmin(loggedInUser.getId())) {
+                userMenu.getItems().add(addProductItem);
+            }
+        } catch (SQLException e) {
+            showErrorAlert("Error checking admin status: " + e.getMessage());
+        }
+        userMenu.getItems().add(profileItem);
+
+        headerPane.getChildren().addAll(searchFrame, cartButton, userMenu);
         HBox.setHgrow(searchFrame, Priority.ALWAYS);
         return headerPane;
     }
 
     // Create a styled button with text, optional icon, and style class
-    private Button createStyledButton(String text, FontAwesome icon, String styleClass) {
+    private Button createStyledButton(String text, Feather icon, String styleClass) {
         Button button = new Button(text);
         if (icon != null) {
             FontIcon fontIcon = new FontIcon(icon);
@@ -139,10 +159,10 @@ public class MarketplaceApp extends Application {
     }
 
     // Create the main scene with CSS
-    private Scene createScene(BorderPane root) {
-        Scene scene = new Scene(root, 1000, 600);
+    Scene createScene(BorderPane root) {
+        Scene scene = new Scene(root, 1100, 600);
         String cssPath = getClass().getResource("styles.css") != null ?
-                getClass().getResource("styles.css").toExternalForm() : null;
+                Objects.requireNonNull(getClass().getResource("styles.css")).toExternalForm() : null;
         if (cssPath != null) {
             scene.getStylesheets().add(cssPath);
         } else {
@@ -153,7 +173,7 @@ public class MarketplaceApp extends Application {
 
     // Setup window resize listener
     private void setupResizeListener(Stage stage) {
-        ChangeListener<Number> resizeListener = (obs, oldVal, newVal) -> loadProducts();
+        ChangeListener<Number> resizeListener = (_, _, _) -> loadProducts();
         stage.widthProperty().addListener(resizeListener);
     }
 
@@ -165,18 +185,24 @@ public class MarketplaceApp extends Application {
         pane.getStyleClass().add("product-frame");
         pane.setAlignment(Pos.TOP_CENTER);
 
+        VBox imageBox = new VBox();
+        imageBox.setPrefHeight(ImageHeight);
+        imageBox.setAlignment(Pos.TOP_CENTER);
         ImageView imageView = createProductImage(product);
+        imageBox.getChildren().add(imageView);
+
         Label nameLabel = createProductLabel(product.getName(), "product-name");
         Label descLabel = createProductDescriptionLabel(product.getDescription());
         Label priceLabel = createProductLabel(String.format("$%.2f", product.getPrice()), "product-price");
-        Button addToCartButton = createStyledButton("", FontAwesome.PLUS, "add-to-cart-button");
-        addToCartButton.setOnAction(e -> cartManager.addToCart(product));
+        Button addToCartButton = createStyledButton("", Feather.PLUS, "add-to-cart-button");
+        addToCartButton.setAlignment(Pos.CENTER);
+        addToCartButton.setOnAction(_ -> cartManager.addToCart(product));
 
         HBox priceAndButtonBox = new HBox(10);
         priceAndButtonBox.setAlignment(Pos.CENTER);
-        priceAndButtonBox.getChildren().addAll(addToCartButton,priceLabel);
+        priceAndButtonBox.getChildren().addAll(priceLabel, addToCartButton);
 
-        pane.getChildren().addAll(imageView, nameLabel, descLabel, priceAndButtonBox);
+        pane.getChildren().addAll(imageBox, nameLabel, descLabel, priceAndButtonBox);
         setupProductPaneInteractions(pane, product);
         return pane;
     }
@@ -184,18 +210,27 @@ public class MarketplaceApp extends Application {
     // Create product image
     private ImageView createProductImage(Product product) {
         ImageView imageView = new ImageView();
-        imageView.setFitWidth(280);
-        imageView.setFitHeight(180);
+        imageView.setFitWidth(PRODUCT_WIDTH);
+        imageView.setFitHeight(ImageHeight);
         imageView.setPreserveRatio(true);
+        imageView.setSmooth(true);
+        // Create a rectangle with rounded top corners
+        Rectangle clip = new Rectangle(PRODUCT_WIDTH, ImageHeight);
+        clip.setArcWidth(20);
+        clip.setArcHeight(20);
+        clip.setY(0);
+        clip.setHeight(ImageHeight);
+        imageView.setClip(clip);
+
         if (product.getImage() != null) {
             try {
                 Image image = new Image(new ByteArrayInputStream(product.getImage()));
                 imageView.setImage(image);
             } catch (Exception e) {
-                imageView.setImage(createPlaceholderImage(280, 180));
+                imageView.setImage(createPlaceholderImage(PRODUCT_WIDTH, ImageHeight));
             }
         } else {
-            imageView.setImage(createPlaceholderImage(280, 180));
+            imageView.setImage(createPlaceholderImage(PRODUCT_WIDTH, ImageHeight));
         }
         return imageView;
     }
@@ -216,9 +251,9 @@ public class MarketplaceApp extends Application {
 
     // Setup product pane hover and click interactions
     private void setupProductPaneInteractions(VBox pane, Product product) {
-        pane.setOnMouseEntered(e -> pane.getStyleClass().add("product-frame-hover"));
-        pane.setOnMouseExited(e -> pane.getStyleClass().remove("product-frame-hover"));
-        pane.setOnMouseClicked(e -> new ProductDetailStage(product, (Stage) pane.getScene().getWindow()).show());
+        pane.setOnMouseEntered(_ -> pane.getStyleClass().add("product-frame-hover"));
+        pane.setOnMouseExited(_ -> pane.getStyleClass().remove("product-frame-hover"));
+        pane.setOnMouseClicked(_ -> new ProductDetailStage(product, (Stage) pane.getScene().getWindow()).show());
     }
 
     // Load products from database
@@ -229,8 +264,8 @@ public class MarketplaceApp extends Application {
                 return db.getAllProducts();
             }
         };
-        task.setOnSucceeded(e -> layoutProducts(task.getValue()));
-        task.setOnFailed(e -> showErrorAlert("Error loading products: " + task.getException().getMessage()));
+        task.setOnSucceeded(_ -> layoutProducts(task.getValue()));
+        task.setOnFailed(_ -> showErrorAlert("Error loading products: " + task.getException().getMessage()));
         new Thread(task).start();
     }
 

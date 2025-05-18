@@ -1,0 +1,48 @@
+/* Cart items pane styling */
+.cart-items-pane {
+    -fx-background-color: #ffffff;
+    -fx-border-color: #e0e0e0;
+    -fx-border-radius: 5;
+    -fx-border-width: 1;
+}
+
+/* Cart item styling */
+.cart-item {
+    -fx-background-color: #fafafa;
+    -fx-border-color: #e0e0e0;
+    -fx-border-radius: 3;
+    -fx-border-width: 1;
+    -fx-padding: 10;
+}
+
+/* Cart item name styling */
+.cart-item-name {
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #333333;
+}
+
+/* Cart item price styling */
+.cart-item-price {
+    -fx-font-size: 14px;
+    -fx-text-fill: #2e7d32;
+    -fx-padding: 0 10 0 0; /* Space between price and remove button */
+}
+
+/* Remove button styling */
+.remove-button {
+    -fx-background-color: transparent;
+    -fx-text-fill: white;
+}
+
+.remove-button:hover {
+    -fx-background-color: rgba(232, 14, 14, 0.72);
+}
+
+/* Cart total styling */
+.cart-total {
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #333333;
+    -fx-alignment: center-right; /* Align text to the right */
+}

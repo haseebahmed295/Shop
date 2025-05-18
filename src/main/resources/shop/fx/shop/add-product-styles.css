@@ -1,0 +1,55 @@
+/* Root pane styling */
+.root-pane {
+    -fx-background-color: #F5F5F5;
+}
+
+/* Title styling */
+.add-product-title {
+    -fx-font-family: 'Segoe UI';
+    -fx-font-size: 24;
+    -fx-font-weight: bold;
+    -fx-text-fill: #333333;
+}
+
+/* Text field styling */
+.text-field {
+    -fx-background-color: #FFFFFF;
+    -fx-background-radius: 5;
+    -fx-border-color: #e0e0e0;
+    -fx-border-radius: 5;
+    -fx-font-family: 'Segoe UI';
+    -fx-font-size: 14;
+    -fx-padding: 8;
+}
+
+/* Text area styling */
+.text-area {
+    -fx-background-color: #FFFFFF;
+    -fx-background-radius: 5;
+    -fx-border-color: #e0e0e0;
+    -fx-border-radius: 5;
+    -fx-font-family: 'Segoe UI';
+    -fx-font-size: 14;
+    -fx-padding: 8;
+}
+
+/* Image label styling */
+.image-label {
+    -fx-font-family: 'Segoe UI';
+    -fx-font-size: 12;
+    -fx-text-fill: #666666;
+}
+
+/* Action button styling */
+.action-button {
+    -fx-background-color: #0078D4;
+    -fx-text-fill: white;
+    -fx-font-family: 'Segoe UI';
+    -fx-font-size: 14;
+    -fx-background-radius: 8;
+    -fx-padding: 10 20;
+}
+
+.action-button:hover {
+    -fx-background-color: #005BA1;
+}

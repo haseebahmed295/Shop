@@ -50,13 +50,15 @@ public class CartManager {
 
         ScrollPane cartScrollPane = new ScrollPane(cartItemsPane);
         cartScrollPane.setFitToWidth(true);
-        cartScrollPane.getStyleClass().add("products-scroll-pane");
         cartRoot.setCenter(cartScrollPane);
 
         // Bottom HBox for Buy button and Total price
         HBox bottomBox = new HBox(10);
         bottomBox.setPadding(new Insets(10));
-        bottomBox.setAlignment(Pos.CENTER_LEFT);
+        bottomBox.setAlignment(Pos.CENTER_RIGHT);
+
+        Region spacer = new Region();
+        HBox.setHgrow(spacer, Priority.ALWAYS);
 
         Button buyButton = new Button();
         FontIcon buyIcon = new FontIcon(Feather.CHECK);
@@ -67,19 +69,17 @@ public class CartManager {
 
         Label totalLabel = new Label(String.format("Total: $%.2f", cart.stream().mapToDouble(Product::getPrice).sum()));
         totalLabel.getStyleClass().add("cart-total");
-        HBox.setHgrow(totalLabel, Priority.ALWAYS);
-        HBox.setMargin(totalLabel, new Insets(0, 10, 0, 0)); // Margin for right alignment
 
-        bottomBox.getChildren().addAll(totalLabel ,buyButton);
+        bottomBox.getChildren().addAll(spacer, totalLabel, buyButton);
         cartRoot.setBottom(bottomBox);
 
         Scene cartScene = new Scene(cartRoot, 600, 400);
-        String cssPath = CartManager.class.getResource("styles.css") != null ?
-                CartManager.class.getResource("styles.css").toExternalForm() : null;
+        String cssPath = CartManager.class.getResource("cart-styles.css") != null ?
+                CartManager.class.getResource("cart-styles.css").toExternalForm() : null;
         if (cssPath != null) {
             cartScene.getStylesheets().add(cssPath);
         } else {
-            System.err.println("Warning: styles.css not found");
+            System.err.println("Warning: cart-styles.css not found");
         }
         cartStage.setScene(cartScene);
         cartStage.show();
@@ -93,7 +93,9 @@ public class CartManager {
 
         Label nameLabel = new Label(product.getName());
         nameLabel.getStyleClass().add("cart-item-name");
-        HBox.setHgrow(nameLabel, Priority.ALWAYS); // Name expands
+
+        Region spacer = new Region();
+        HBox.setHgrow(spacer, Priority.ALWAYS);
 
         Label priceLabel = new Label(String.format("$%.2f", product.getPrice()));
         priceLabel.getStyleClass().add("cart-item-price");
@@ -109,7 +111,7 @@ public class CartManager {
             showCartStage();
         });
 
-        itemPane.getChildren().addAll(nameLabel, priceLabel, removeButton);
+        itemPane.getChildren().addAll(nameLabel, spacer, priceLabel, removeButton);
         return itemPane;
     }
 

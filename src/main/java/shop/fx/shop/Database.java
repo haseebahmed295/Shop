@@ -1,8 +1,13 @@
 package shop.fx.shop;
-
+import java.lang.reflect.Field;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.io.IOException;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 
 class Database {
     // Test usage
@@ -10,12 +15,11 @@ class Database {
         DatabaseManager db = null;
 
         for (int i = 0; i < 10; i++) {
-
             try {
                 db = new DatabaseManager();
 
-                // Add a product
-                Product product = new Product("Phone", "High-performance Phone", 300, "PhoneStore", null);
+                // Add a product with an image path
+                Product product = new Product("Phone " + i, "High-performance Phone wrwewwwfwewjfofoewfoeoheovovcowencejncwencoewncojewcnewcnewnvewnveoaoncownoewfowenewnvnvjnnv", 300, "PhoneStore", "C:/Users/Just/Pictures/Untitled.jpg");
                 db.addProduct(product);
                 System.out.println("Product added with ID: " + product.getId());
             } catch (SQLException e) {
@@ -33,7 +37,6 @@ class Database {
     }
 }
 
-
 // Product class to encapsulate product data
 class Product {
     private int id;
@@ -43,12 +46,22 @@ class Product {
     private final String seller;
     private final byte[] image;
 
-    public Product(String name, String description, double price, String seller, byte[] image) {
+    public Product(String name, String description, double price, String seller, String imagePath) {
         this.name = name;
         this.description = description;
         this.price = price;
         this.seller = seller;
-        this.image = image;
+        this.image = imagePath != null ? loadImage(imagePath) : null;
+    }
+
+    // Load image from file path and convert to byte array
+    private byte[] loadImage(String imagePath) {
+        try {
+            return Files.readAllBytes(Paths.get(imagePath));
+        } catch (IOException e) {
+            System.err.println("Error reading image file: " + imagePath + ". Error: " + e.getMessage());
+            return null; // Fallback to no image
+        }
     }
 
     // Getters and setters
@@ -118,7 +131,7 @@ class User {
 
 // DatabaseManager class to handle all database operations using standard JDBC
 class DatabaseManager {
-    private Connection conn;
+    Connection conn;
     private static final String DB_URL = "jdbc:sqlite:marketplace.db";
 
     public DatabaseManager() {
@@ -136,6 +149,15 @@ class DatabaseManager {
             throw new RuntimeException("Failed to connect to database", e);
         }
     }
+    public boolean isAdmin(int userId) throws SQLException {
+        String sql = "SELECT role FROM users WHERE id = ?";
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setInt(1, userId);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                return rs.next() && rs.getString("role").equals("Admin");
+            }
+        }
+    }
 
     // Initialize database and create tables
     private void initializeDatabase() throws SQLException {
@@ -149,12 +171,13 @@ class DatabaseManager {
                     "seller TEXT NOT NULL," +
                     "image BLOB)");
 
-            // Create users table
+            // Create users table with password
             stmt.execute("CREATE TABLE IF NOT EXISTS users (" +
                     "id INTEGER PRIMARY KEY AUTOINCREMENT," +
                     "username TEXT NOT NULL UNIQUE," +
                     "email TEXT NOT NULL," +
-                    "role TEXT NOT NULL)");
+                    "role TEXT NOT NULL," +
+                    "password TEXT NOT NULL)");
         }
     }
 
@@ -204,9 +227,17 @@ class DatabaseManager {
                             rs.getString("description"),
                             rs.getDouble("price"),
                             rs.getString("seller"),
-                            rs.getBytes("image")
+                            null // Image path not stored in DB, only byte[]
                     );
                     product.setId(rs.getInt("id"));
+                    // Set image directly from DB
+                    try {
+                        Field imageField = Product.class.getDeclaredField("image");
+                        imageField.setAccessible(true);
+                        imageField.set(product, rs.getBytes("image"));
+                    } catch (NoSuchFieldException | IllegalAccessException e) {
+                        System.err.println("Error setting image field: " + e.getMessage());
+                    }
                     products.add(product);
                 }
             }
@@ -227,9 +258,17 @@ class DatabaseManager {
                         rs.getString("description"),
                         rs.getDouble("price"),
                         rs.getString("seller"),
-                        rs.getBytes("image")
+                        null // Image path not stored in DB, only byte[]
                 );
                 product.setId(rs.getInt("id"));
+                // Set image directly from DB
+                try {
+                    Field imageField = Product.class.getDeclaredField("image");
+                    imageField.setAccessible(true);
+                    imageField.set(product, rs.getBytes("image"));
+                } catch (NoSuchFieldException | IllegalAccessException e) {
+                    System.err.println("Error setting image field: " + e.getMessage());
+                }
                 products.add(product);
             }
         }
@@ -255,21 +294,60 @@ class DatabaseManager {
         return users;
     }
 
-    // Add a new user
-    public void addUser(User user) throws SQLException {
+    // Add a new user with hashed password
+    public void addUser(User user, String password) throws SQLException {
         checkConnection();
-        String sql = "INSERT INTO users (username, email, role) VALUES (?, ?, ?)";
-        try (PreparedStatement pstmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
-            pstmt.setString(1, user.getUsername());
-            pstmt.setString(2, user.getEmail());
-            pstmt.setString(3, user.getRole());
-            pstmt.executeUpdate();
+        String sql = "INSERT INTO users (username, email, role, password) VALUES (?, ?, ?, ?)";
+        try (PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+            stmt.setString(1, user.getUsername());
+            stmt.setString(2, user.getEmail());
+            stmt.setString(3, user.getRole());
+            stmt.setString(4, hashPassword(password));
+            stmt.executeUpdate();
 
-            try (ResultSet rs = pstmt.getGeneratedKeys()) {
+            try (ResultSet rs = stmt.getGeneratedKeys()) {
                 if (rs.next()) {
                     user.setId(rs.getInt(1));
                 }
             }
+        }
+    }
+
+    // Authenticate user
+    public User authenticate(String username, String password) throws SQLException {
+        checkConnection();
+        String sql = "SELECT * FROM users WHERE username = ?";
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, username);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    String storedPassword = rs.getString("password");
+                    if (storedPassword.equals(hashPassword(password))) {
+                        User user = new User(
+                                rs.getString("username"),
+                                rs.getString("email"),
+                                rs.getString("role")
+                        );
+                        user.setId(rs.getInt("id"));
+                        return user;
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
+    // Update user details
+    public void updateUser(int id, String username, String email, String role, String password) throws SQLException {
+        checkConnection();
+        String sql = "UPDATE users SET username = ?, email = ?, role = ?, password = ? WHERE id = ?";
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, username);
+            pstmt.setString(2, email);
+            pstmt.setString(3, role);
+            pstmt.setString(4, hashPassword(password));
+            pstmt.setInt(5, id);
+            pstmt.executeUpdate();
         }
     }
 
@@ -321,5 +399,20 @@ class DatabaseManager {
         }
     }
 
-
+    // Hash password using SHA-256
+    private String hashPassword(String password) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hash = digest.digest(password.getBytes());
+            StringBuilder hexString = new StringBuilder();
+            for (byte b : hash) {
+                String hex = Integer.toHexString(0xff & b);
+                if (hex.length() == 1) hexString.append('0');
+                hexString.append(hex);
+            }
+            return hexString.toString();
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException("Password hashing failed", e);
+        }
+    }
 }
